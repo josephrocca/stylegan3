@@ -53,8 +53,10 @@ class PPLSampler(torch.nn.Module):
         # Interpolate in W or Z.
         if self.space == 'w':
             w0, w1 = self.G.mapping(z=torch.cat([z0,z1]), c=torch.cat([c,c])).chunk(2)
-            wt0 = w0.lerp(w1, t.unsqueeze(1).unsqueeze(2))
-            wt1 = w0.lerp(w1, t.unsqueeze(1).unsqueeze(2) + self.epsilon)
+            # wt0 = w0.lerp(w1, t.unsqueeze(1).unsqueeze(2))
+            # wt1 = w0.lerp(w1, t.unsqueeze(1).unsqueeze(2) + self.epsilon)
+            wt0 = w0 + t.unsqueeze(1).unsqueeze(2) * (w1 - w0)
+            wt1 = w0 + (t.unsqueeze(1).unsqueeze(2) + self.epsilon) * (w1 - w0)
         else: # space == 'z'
             zt0 = slerp(z0, z1, t.unsqueeze(1))
             zt1 = slerp(z0, z1, t.unsqueeze(1) + self.epsilon)
