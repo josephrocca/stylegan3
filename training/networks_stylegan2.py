@@ -248,7 +248,10 @@ class MappingNetwork(torch.nn.Module):
         # Update moving average of W.
         if update_emas and self.w_avg_beta is not None:
             with torch.autograd.profiler.record_function('update_w_avg'):
-                self.w_avg.copy_(x.detach().mean(dim=0).lerp(self.w_avg, self.w_avg_beta))
+                #self.w_avg.copy_(x.detach().mean(dim=0).lerp(self.w_avg, self.w_avg_beta))
+                tmp = x.detach().mean(dim=0)
+                lerp = tmp + self.w_avg_beta * (self.w_avg - tmp)
+                self.w_avg.copy_(lerp)
 
         # Broadcast.
         if self.num_ws is not None:
