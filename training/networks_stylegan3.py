@@ -19,6 +19,9 @@ from torch_utils.ops import conv2d_gradfix
 from torch_utils.ops import filtered_lrelu
 from torch_utils.ops import bias_act
 
+def lerp(start, end, weight):
+    return start + weight * (end - start)
+
 #----------------------------------------------------------------------------
 
 @misc.profiled_function
@@ -152,12 +155,14 @@ class MappingNetwork(torch.nn.Module):
 
         # Update moving average of W.
         if update_emas:
-            self.w_avg.copy_(x.detach().mean(dim=0).lerp(self.w_avg, self.w_avg_beta))
+            #self.w_avg.copy_(x.detach().mean(dim=0).lerp(self.w_avg, self.w_avg_beta))
+            self.w_avg.copy_(lerp(x.detach().mean(dim=0), self.w_avg, self.w_avg_beta))
 
         # Broadcast and apply truncation.
         x = x.unsqueeze(1).repeat([1, self.num_ws, 1])
         if truncation_psi != 1:
-            x[:, :truncation_cutoff] = self.w_avg.lerp(x[:, :truncation_cutoff], truncation_psi)
+            #x[:, :truncation_cutoff] = self.w_avg.lerp(x[:, :truncation_cutoff], truncation_psi)
+            x[:, :truncation_cutoff] = lerp(self.w_avg, x[:, :truncation_cutoff], truncation_psi)
         return x
 
     def extra_repr(self):
@@ -335,7 +340,8 @@ class SynthesisLayer(torch.nn.Module):
         if update_emas:
             with torch.autograd.profiler.record_function('update_magnitude_ema'):
                 magnitude_cur = x.detach().to(torch.float32).square().mean()
-                self.magnitude_ema.copy_(magnitude_cur.lerp(self.magnitude_ema, self.magnitude_ema_beta))
+                #self.magnitude_ema.copy_(magnitude_cur.lerp(self.magnitude_ema, self.magnitude_ema_beta))
+                self.magnitude_ema.copy_(lerp(magnitude_cur, self.magnitude_ema, self.magnitude_ema_beta))
         input_gain = self.magnitude_ema.rsqrt()
 
         # Execute affine layer.
