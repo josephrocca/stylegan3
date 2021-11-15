@@ -20,6 +20,9 @@ from torch_utils.ops import upfirdn2d
 from torch_utils.ops import bias_act
 from torch_utils.ops import fma
 
+def lerp(start, end, weight):
+    return start + weight * (end - start)
+
 #----------------------------------------------------------------------------
 
 @misc.profiled_function
@@ -249,9 +252,7 @@ class MappingNetwork(torch.nn.Module):
         if update_emas and self.w_avg_beta is not None:
             with torch.autograd.profiler.record_function('update_w_avg'):
                 #self.w_avg.copy_(x.detach().mean(dim=0).lerp(self.w_avg, self.w_avg_beta))
-                tmp = x.detach().mean(dim=0)
-                lerp = tmp + self.w_avg_beta * (self.w_avg - tmp)
-                self.w_avg.copy_(lerp)
+                self.w_avg.copy_(lerp(x.detach().mean(dim=0), self.w_avg, self.w_avg_beta))
 
         # Broadcast.
         if self.num_ws is not None:
